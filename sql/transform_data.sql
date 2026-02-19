@@ -4,51 +4,51 @@ DROP TABLE IF EXISTS processed_station_metrics;
 
 CREATE TABLE processed_station_metrics AS
 SELECT
-    `Charging Station ID` AS station_id,
-    `Charging Station Location` AS location,
+    charging_station_id AS station_id,
+    charging_station_location AS location,
     COUNT(*) AS total_sessions,
-    AVG(`Energy Consumed (kWh)`) AS avg_energy_kwh,
-    AVG(`Charging Duration (hours)`) AS avg_duration_hr,
-    AVG(`Charging Cost (USD)`) AS avg_cost_usd,
-    AVG(`Temperature (°C)`) AS avg_temp_c,
+    AVG(energy_consumed_kwh) AS avg_energy_kwh,
+    AVG(charging_duration_hours) AS avg_duration_hr,
+    AVG(cost_usd) AS avg_cost_usd,
+    AVG(temperature_c) AS avg_temp_c,
     (
-        SELECT `Charger Type`
+        SELECT charger_type
         FROM raw_data r2
-        WHERE r2.`Charging Station ID` = r1.`Charging Station ID`
-          AND r2.`Charging Station Location` = r1.`Charging Station Location`
-        GROUP BY `Charger Type`
+        WHERE r2.charging_station_id = r1.charging_station_id
+          AND r2.charging_station_location = r1.charging_station_location
+        GROUP BY charger_type
         ORDER BY COUNT(*) DESC
         LIMIT 1
     ) AS most_common_charger_type
 FROM raw_data r1
-GROUP BY `Charging Station ID`, `Charging Station Location`;
+GROUP BY charging_station_id, charging_station_location;
 
--- Table 2: Energy Demand Analysis 
+-- Table 2: Energy Demand Analysis
 DROP TABLE IF EXISTS processed_energy_demand;
 
 CREATE TABLE processed_energy_demand AS
 SELECT
-    `Charging Station Location` AS location,
-    `Day of Week` AS day_of_week,
-    `Time of Day` AS time_of_day,
-    SUM(`Energy Consumed (kWh)`) AS total_energy_kwh,
+    charging_station_location AS location,
+    day_of_week AS day_of_week,
+    time_of_day AS time_of_day,
+    SUM(energy_consumed_kwh) AS total_energy_kwh,
     COUNT(*) AS total_sessions
 FROM raw_data
-GROUP BY 
-    `Charging Station Location`,
-    `Day of Week`,
-    `Time of Day`;
+GROUP BY
+    charging_station_location,
+    day_of_week,
+    time_of_day;
 
 -- Table 3: Cost and Efficiency
 DROP TABLE IF EXISTS processed_cost_efficiency;
 
 CREATE TABLE processed_cost_efficiency AS
 SELECT
-    `Charger Type` AS charger_type,
-    AVG(`Charging Duration (hours)`) AS avg_duration_hr,
-    AVG(`Charging Cost (USD)`) AS avg_cost_usd,
-    AVG(`Energy Consumed (kWh)`) AS avg_energy_kwh
+    charger_type AS charger_type,
+    AVG(charging_duration_hours) AS avg_duration_hr,
+    AVG(cost_usd) AS avg_cost_usd,
+    AVG(energy_consumed_kwh) AS avg_energy_kwh
 FROM raw_data
-GROUP BY `Charger Type`;
+GROUP BY charger_type;
 
 
