@@ -3,72 +3,60 @@ import matplotlib.pyplot as plt
 from db import get_engine
 
 def show_dashboard():
-    #connect to mysql
     engine = get_engine()
+    df = pd.read_sql("SELECT * FROM raw_data", engine)
 
-    #Read processed station metrics 
-    df=pd.read_sql("SELECT * FROM processed_station_metrics", con =engine)
+    # Build Aggregations
+    sessions_by_location = df.groupby("charging_station_location").size()
 
-    #check
-    print(df.head())
+    avg_energy_by_location = (
+        df.groupby("charging_station_location")["energy_consumed_kwh"].mean()
+    )
 
-    #  Dashboard 1: Total sessions per station 
-    plt.figure(figsize=(8,5))
-    plt.bar(df['location'], df['total_sessions'], color='skyblue')
-    plt.title("Total Charging Sessions per Station")
+    stations_by_charger_type = df["charger_type"].value_counts()
+
+    energy_by_day_of_week = (
+        df.groupby("day_of_week")["energy_consumed_kwh"].sum()
+    )
+
+    avg_cost_by_charger_type = (
+        df.groupby("charger_type")["cost_usd"].mean()
+    )
+
+    # Create 5 Separate Figures
+    plt.figure(figsize=(8, 5))
+    plt.bar(sessions_by_location.index, sessions_by_location.values, color="skyblue")
+    plt.title("Total Charging Sessions by Location")
     plt.xlabel("Station Location")
     plt.ylabel("Total Sessions")
-    plt.tight_layout()
-    plt.show()
+    plt.xticks(rotation=20)
 
-    #  Dashboard 2: Average energy consumed per station 
-    plt.figure(figsize=(8,5))
-    plt.bar(df['location'], df['avg_energy_kwh'], color='orange')
-    plt.title("Average Energy Consumed per Station (kWh)")
+    plt.figure(figsize=(8, 5))
+    plt.bar(avg_energy_by_location.index, avg_energy_by_location.values, color="orange")
+    plt.title("Average Energy Consumed by Location (kWh)")
     plt.xlabel("Station Location")
     plt.ylabel("Avg Energy (kWh)")
-    plt.tight_layout()
-    plt.show()
+    plt.xticks(rotation=20)
 
-    # Dashboard 3: Most common charger type per station
-    plt.figure(figsize=(8,5))
-    df_charger = df.groupby('most_common_charger_type')['station_id'].count()
-    df_charger.plot(kind='bar', color='green')
+    plt.figure(figsize=(8, 5))
+    plt.bar(stations_by_charger_type.index, stations_by_charger_type.values, color="green")
     plt.title("Number of Stations by Most Common Charger Type")
     plt.xlabel("Charger Type")
     plt.ylabel("Number of Stations")
-    plt.tight_layout()
-    plt.show()
+    plt.xticks(rotation=45)
 
-    # 2. Energy Demand Dashboard
-   
-    df_energy = pd.read_sql("SELECT * FROM processed_energy_demand;", con=engine)
-    print("Energy Demand Table (first 5 rows):")
-    print(df_energy.head())
-
-    #  plot Total energy by day of week
-    plt.figure(figsize=(8,5))
-    df_energy.groupby("day_of_week")["total_energy_kwh"].sum().plot(kind='bar', color='purple')
+    plt.figure(figsize=(8, 5))
+    plt.bar(energy_by_day_of_week.index, energy_by_day_of_week.values, color="purple")
     plt.title("Total Energy Consumed by Day of Week")
     plt.xlabel("Day of Week")
     plt.ylabel("Total Energy (kWh)")
-    plt.tight_layout()
-    plt.show()
+    plt.xticks(rotation=45)
 
-   
-    # 3. Cost & Efficiency Dashboard
-
-    df_cost = pd.read_sql("SELECT * FROM processed_cost_efficiency;", con=engine)
-    print("Cost & Efficiency Table (first 5 rows):")
-    print(df_cost.head())
-
-    # plot Average cost per station
-    plt.figure(figsize=(8,5))
-    plt.bar(df_cost['charger_type'], df_cost['avg_cost_usd'], color='red')
-    plt.title("Average Charging Cost per Station (USD)")
-    plt.xlabel("Station ID")
+    plt.figure(figsize=(8, 5))
+    plt.bar(avg_cost_by_charger_type.index, avg_cost_by_charger_type.values, color="red")
+    plt.title("Average Charging Cost by Charger Type (USD)")
+    plt.xlabel("Charger Type")
     plt.ylabel("Avg Cost (USD)")
-    plt.tight_layout()
+    plt.xticks(rotation=20)
+
     plt.show()
-if __name__ == "__main__":
-    show_dashboard()
